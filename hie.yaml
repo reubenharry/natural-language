@@ -1,0 +1,13 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "natural-language:lib"
+
+    - path: "./app/Main.hs"
+      component: "natural-language:exe:natural-language-exe"
+
+    - path: "./app/Paths_natural_language.hs"
+      component: "natural-language:exe:natural-language-exe"
+
+    - path: "./test"
+      component: "natural-language:test:natural-language-test"
