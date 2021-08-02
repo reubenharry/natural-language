@@ -28,6 +28,8 @@ dependencies:
 - log-domain
 - comonad
 - containers
+- MemoTrie
+- data-fix
 
 library:
   source-dirs: src

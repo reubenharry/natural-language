@@ -49,15 +49,15 @@ type NonRecursivelyBranch m pauseType = Compose m (FT.FreeF (BaseTree Word) paus
 
 type Grammar m pauseType startType = startType -> NonRecursivelyBranch m pauseType startType
 
-type Interpreter m pauseType resultType = NonRecursivelyBranch m pauseType (m resultType) -> m resultType
+type Interpreter resultType = BaseTree Word resultType -> resultType
 
-type FragmentGrammar m pauseType startType =
+type IdiomGrammar m pauseType startType =
   startType ->
     (NonRecursivelyBranch m pauseType)
     (F.Free (NonRecursivelyBranch m pauseType) startType)
 
 
-type FragmentInterpreter m pauseType resultType =
-  (NonRecursivelyBranch m pauseType)
-    (F.Cofree (NonRecursivelyBranch m pauseType) (m resultType)) ->
-  m resultType
+type IdiomInterpreter pauseType resultType =
+  (BaseTree Word)
+    (F.Cofree (BaseTree Word) resultType) ->
+  resultType

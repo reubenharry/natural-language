@@ -1,176 +1,188 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Semantics where
 
-import Control.Applicative
-import Control.Arrow ((&&&), (***))
-import qualified Control.Comonad.Cofree as F
+import Control.Applicative ( Applicative(liftA2, pure) )
+import Control.Comonad.Cofree ( Cofree((:<)) )
 import qualified Control.Comonad.Trans.Cofree as FT
-import Control.Monad.Bayes.Class (MonadSample)
-import Control.Monad.Bayes.Enumerator ()
-import Control.Monad.Bayes.Sampler ()
-import Control.Monad.Bayes.Traced ()
-import Control.Monad.Bayes.Weighted ()
-import qualified Control.Monad.Free as F
 import Control.Monad.State (MonadState (get))
-import qualified Control.Monad.Trans.Free as FT
 import Data.Functor.Compose (Compose (Compose))
-import qualified Data.Functor.Foldable as Fold
-import Data.List (intersperse)
-import Data.Maybe (catMaybes, fromMaybe, isJust)
-import Data.Void (Void)
-import Syntax ()
-import Types (BaseTree (Branch, Leaf), CAT, FragmentInterpreter, Grammar, Interpreter)
-import Utl ()
+import Types (BaseTree (Branch, Leaf), CAT, IdiomInterpreter, Grammar, Interpreter)
 import Prelude hiding (Word, words)
-import Data.Functor
-import Control.Monad.Writer
-import Control.Monad.Identity
+import Control.Monad.Identity ( Identity(..), filterM )
 import Control.Monad.Reader
-import Control.Monad.Cont
-import Control.Monad.Except
+    ( MonadTrans(lift), MonadReader(ask), ReaderT(runReaderT), asks )
+import Control.Monad.Cont ( ContT(..) )
+import Control.Monad.Except ( MonadError(..), ExceptT, runExceptT )
 import qualified Data.Map as M
+import Data.Either (fromRight)
+import Data.Fix ( Fix(Fix) )
 
--- import FragmentGrammar
--- import Data.Map
+import Data.Functor.Foldable (histo)
 
 data Entity = Jane | John | Jill deriving (Show, Eq, Ord)
-
-type World = M.Map Entity Attrs
-
 type Attrs = M.Map String String
+type World = M.Map Entity Attrs
 
 data Sem a
   = E (a Entity)
-  | Pred1 (Entity -> a Bool)
+  | PRED1 (Entity -> a Bool)
   | Boolean (a Bool)
   | DET ((Entity -> a Bool) -> a Entity)
   | ERR String
 
-instance Show (Sem a) where
-  show (E _) = "E"
-  show (Pred1 _) = "Pred1"
-  show (Boolean _) = "Bool"
-  show (DET _) = "DET"
-  show (ERR _) = "ERR"
+-- an example syntax tree
+exampleTree :: Fix (BaseTree String)
+exampleTree = Fix $ Branch [
+  Fix $ Branch [
+    Fix $ Leaf "the",
+    Fix $ Leaf "woman"],
+  Fix $ Branch [
+    Fix $ Leaf "is",
+    Fix $ Branch [
+      Fix $ Leaf "a",
+      Fix $ Leaf "runner"]
+  ]]
 
-newtype Logger = Logger String deriving (Show, Ord, Eq)
+exampleInterpretation :: Either String Bool
+exampleInterpretation =
+  let unpack = runM exampleWorld . getSentence 
+      meaning = histo semantics 
+  in unpack $ meaning exampleTree
 
-instance Semigroup Logger where
-  (Logger a) <> (Logger b) = Logger (a <> " " <> b) 
+exampleWorld :: M.Map Entity (M.Map [Char] [Char])
+exampleWorld = M.fromList [
+  (Jane, M.fromList [
+    ("runner", "True")]),
+  (Jill, M.fromList [
+    ("runner", "True")])]
 
-instance Monoid Logger where
-  mempty = Logger ""
+semantics :: IdiomInterpreter pauseType (Sem M)
+semantics = \case
 
-getSentence :: Sem a -> Either String (a Bool) 
+  Word "John" -> E $ pure John
+  Word "Jane" -> E $ pure Jane
+  Word "Jill" -> E $ pure Jill
+  Word "runner" -> PRED1 run
+  Word "runs" -> PRED1 run
+
+
+  Word "woman" -> PRED1 $ pure . \case
+    Jane -> True
+    Jill -> True
+    John -> False
+
+  Word "the" -> DET $ \x -> do 
+    w <- asks M.keys
+    y <- filterM x w
+    case y of
+      [uniqueEntity] -> return uniqueEntity
+      xs -> throwError ("presup failure: " <> show xs)
+
+  Word "everyone" -> E $ do 
+    dom <- asks M.keys
+    ContT $ \f -> foldr1 (liftA2 (&&)) $ fmap f dom
+
+  Word "someone" -> E $ do
+    dom <- asks M.keys 
+    ContT $ \f -> foldr1 (liftA2 (||)) $ fmap f dom
+
+  Word x -> E $ throwError $ show x
+
+  Branch [
+    _ :< Word "runs",
+    _ :< Word "wild"
+    ] -> PRED1 $ \x -> do
+      w <- ask
+      attrs <- case M.lookup x w of 
+        Nothing -> throwError "Nothing runs"
+        Just y -> return y
+      return $ M.lookup "runner" attrs == Just "True" 
+
+  -- is an X
+  Branch [
+      _ :< Word "is",
+      _ :< Branch [
+          _ :< Word "a", 
+          PRED1 p :< _]]
+    -> PRED1 p
+
+
+  -- a and b
+  Branch 
+    [(E e1) :< _,
+      _ :<  (Branch 
+        [_ :< ( ( (Word "and"))),
+        ( (E e2)) :< _])]
+    -> E $ do
+      e1' <- e1
+      e2' <- e2
+      ContT $ \f -> liftA2 (&&) (f e1') (f e2')
+
+  Composition (E str) (PRED1 vp) -> Boolean $ vp =<< str
+  Composition (DET det) (PRED1 n) -> E $ det n
+  Composition (ERR a) (ERR b) -> ERR (a <> " " <> b)
+  Composition (ERR a) _ -> ERR a
+  Composition _ (ERR b) -> ERR b
+
+  _ -> ERR "no interpretation for this"        
+
+
+linearize :: Interpreter String
+linearize = \case
+
+  Leaf x -> x
+  Branch [r1, r2]  -> r1 <> " " <> r2
+  _ -> "Cannot interpret partial trees"
+
+pattern Composition r1 r2 <- (Branch [r1 :< _, r2 :< _])
+
+pattern Word :: leafType -> BaseTree leafType branchType
+pattern Word str <- Leaf str
+
+--------------------
+-- word meaning
+--------------------
+run :: (MonadReader (M.Map k (M.Map [Char] [Char])) m, Ord k, MonadError [Char] m) => k -> m Bool
+run x = do
+
+  w <- ask
+  attrs <- case M.lookup x w of 
+    Nothing -> throwError "Nothing runs"
+    Just y -> return y
+  return $ M.lookup "runner" attrs == Just "True"
+
+
+--------------------
+-- utls
+--------------------
+
+getSentence :: Sem a -> Either String (a Bool)
 getSentence (Boolean b) = Right b
 getSentence (ERR s) = Left s
 getSentence _ = Left "error"
 
 type M = ContT Bool (ReaderT World (ExceptT String Identity))
 
+runM :: r -> Either a (ContT Bool (ReaderT r (ExceptT e Identity)) Bool) -> Either e Bool
+runM w x = runIdentity $ runExceptT $ flip runReaderT w $ runContT (fromRight (return False) x) return
+
+
 -- an instance to ensure that adding ContT to the stack preserves the ability to throw errors
 instance MonadError e m => MonadError e (ContT r m) where
   throwError = lift . throwError
   catchError op h = ContT $ \k -> catchError (runContT op k) (\e -> runContT (h e) k)
 
-woman Jane = True
-woman Jill = True
-woman John = False
-
-semanticsApple :: FragmentInterpreter Identity pauseType (Sem M)
--- semanticsApple :: (Monad m, Show pauseType) => Interpreter m pauseType (String, World -> Bool)
-semanticsApple (Compose x) = do
-  x' <- x
-  case x' of
-
-
-
-    Word "John" -> return $ E $ pure John
-    Word "Jane" -> return $ E $ pure Jane
-    Word "Jill" -> return $ E $ pure Jill
-    Word "runs" -> return $ Pred1 $ \x -> do
-      
-      w <- ask
-      attrs <- case M.lookup x w of 
-        Nothing -> throwError "error: presup"
-        Just y -> return y
-
-      return $ M.lookup "runner" attrs == Just "True"
-
-    Word "woman" -> return $ Pred1 $ pure . woman
-
-    Word "the" -> return $ DET $ \x -> do 
-      w <- asks M.keys
-      y <- filterM x w
-      case y of
-        [theBlah] -> return theBlah
-        xs -> throwError ("presup failure: " <> show xs)
-      -- ContT $ \f -> foldr1 (liftA2 (&&)) $ fmap f dom
-
-
-    Word "everyone" -> return $ E $ do 
-      dom <- asks M.keys
-      ContT $ \f -> foldr1 (liftA2 (&&)) $ fmap f dom
-
-    Word "someone" -> return $ E $ do
-      dom <- asks M.keys 
-      ContT $ \f -> foldr1 (liftA2 (||)) $ fmap f dom
-
-    Word x -> return $ ERR x -- return $ E $ throwError $ show x
-    
-    (FT.Free (Branch 
-      [Identity (E e1) F.:< _,
-       _ F.:< Compose (Identity (FT.Free (Branch 
-        [_ F.:< (Compose (Identity (Word "and"))),
-         (Identity (E e2)) F.:< _
-         ])))
-      ])) -> Identity $ E $ do
-        e1' <- e1
-        e2' <- e2
-        ContT $ \f -> liftA2 (&&) (f e1') (f e2')
-
-    Composition r1 r2  -> do
-      r1' <- r1
-      r2' <- r2
-      case (r1',r2') of
-          (E str, Pred1 vp) -> return $ Boolean $ vp =<< str -- undefined -- liftA2 (,) undefined (liftA2 (&&) r1 r2)
-          (DET det, Pred1 n) -> return $ E $ det n
-          (ERR a, ERR b) -> return $ ERR (a <> " " <> b)
-          (ERR a, _) -> return $ ERR a
-          (_, ERR a) -> return $ ERR a
-
-          (a,b) -> error $ show (a,b)
-
-    _ -> return $ ERR "partial"        
-
-
-linearize :: FragmentInterpreter Identity pauseType String
-linearize (Compose x) = do
-  x' <- x
-  case x' of
-
-
-    Word x -> return x
-    
-    Composition r1 r2  -> do
-      r1' <- r1
-      r2' <- r2
-      return (r1' <> " " <> r2')
-
-
-    _ -> return "partial"   
-
-pattern Composition r1 r2 <- FT.Free (Branch [r1 F.:< Compose _, r2 F.:< Compose _])
-pattern Word str <- FT.Free (Leaf str)
-
-
-type Lexicon m pauseType resultType = (Interpreter m pauseType resultType, Grammar m pauseType CAT)
+instance Show (Sem a) where
+  show (E _) = "E"
+  show (PRED1 _) = "PRED1"
+  show (Boolean _) = "Bool"
+  show (DET _) = "DET"
+  show (ERR _) = "ERR"

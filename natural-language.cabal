@@ -35,9 +35,11 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      MemoTrie
+    , base >=4.7 && <5
     , comonad
     , containers
+    , data-fix
     , free
     , log-domain
     , monad-bayes
@@ -53,9 +55,11 @@ executable natural-language-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      MemoTrie
+    , base >=4.7 && <5
     , comonad
     , containers
+    , data-fix
     , free
     , log-domain
     , monad-bayes
@@ -73,9 +77,11 @@ test-suite natural-language-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      MemoTrie
+    , base >=4.7 && <5
     , comonad
     , containers
+    , data-fix
     , free
     , log-domain
     , monad-bayes

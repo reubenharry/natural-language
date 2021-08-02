@@ -15,14 +15,16 @@ import Control.Monad.State ()
 import qualified Control.Monad.Trans.Free as FT
 import Data.Functor.Compose (Compose (Compose))
 import qualified Data.Functor.Foldable as Fold
-import Data.List (intersperse)
 import Data.Maybe (catMaybes, fromMaybe, isJust)
-import Data.Void (Void)
-import Types (BaseTree (..), CAT, NodeData (C))
+import Data.Void 
+import Types (BaseTree (..), CAT, NodeData (C), Word)
 import Control.Monad.Bayes.Enumerator
 import Data.Function
 import Data.Ord
 import Data.List
+import Data.Fix
+import Prelude hiding (Word)
+
 
 branch :: [b0] -> FT.FreeF (BaseTree leafType0) a0 b0
 branch = FT.Free . Branch
@@ -40,6 +42,16 @@ toFree :: Functor f => FT.Free f a1 -> F.Free f a1
 toFree = Fold.cata $ \case
   Compose (Identity (FT.Free x)) -> F.Free x
   Compose (Identity (FT.Pure x)) -> F.Pure x
+
+-- when any pause value is Nothing, return Nothing. Else convert to a simpler representation
+fromFree :: FT.FreeT (BaseTree Word) Identity (Maybe Void) -> Maybe (Fix (BaseTree Word))
+fromFree = Fold.cata $ \case
+  (Compose (Identity (FT.Free (Leaf x)))) -> Just $ Fix $ Leaf x
+  (Compose (Identity (FT.Free (Branch ls)))) -> case sequence ls of
+    Nothing -> Nothing
+    Just ls' -> Just $ Fix $ Branch ls'
+  (Compose (Identity (FT.Pure Nothing))) -> Nothing
+  (Compose (Identity (FT.Pure (Just x)))) -> absurd x
 
 normalForm2 :: Ord a => Enumerator a -> [(a, Double)]
 normalForm2 = sortBy (\x y -> compare (Down $ snd x) (Down $ snd y) ) . compact . normalize2 . filter (not . isNaN . snd) . normalForm
