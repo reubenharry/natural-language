@@ -15,7 +15,6 @@ import Types
   ( BaseTree (Leaf),
     CAT (..),
     Deterministic,
-    FragmentDict,
     IdiomGrammar,
     Grammar,
     NoPausing,
@@ -31,18 +30,19 @@ syntax =
     S -> return $ branch (F.Pure <$> [NP, VP])
     NP -> uniformD [
       branch $ F.Pure <$> [DET, N], 
-      branch [
-        F.Pure NP,
-        F.Free $ Compose $ return $ branch [F.Free $ Compose $ return $ leaf "and", F.Pure NP]], 
+      -- branch [
+      --   F.Pure NP,
+      --   F.Free $ Compose $ return $ branch [F.Free $ Compose $ return $ leaf "and", F.Pure NP]], 
       leaf "John", leaf "Jane", leaf "Jill", leaf "everyone", leaf "someone"]
-    DET -> uniformD [leaf "the"]
+    DET -> uniformD [leaf "the", leaf "a"]
     N -> uniformD [
      branch $ F.Pure <$> [A, N], 
-     leaf "woman"]
+     leaf "woman", leaf "runner"]
     A -> uniformD [leaf "green", leaf "red"]
     VP ->
       uniformD
         [ leaf "runs",
-          branch [F.Free $ Compose $ return $ leaf "is", F.Pure A]
+          -- branch [F.Free $ Compose $ return $ leaf "is", F.Pure A],
+          branch [F.Free $ Compose $ return $ leaf "is", F.Pure NP]
         ]
     TV -> return $ leaf "sees"

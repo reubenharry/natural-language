@@ -16,13 +16,14 @@ import qualified Control.Monad.Trans.Free as FT
 import Data.Functor.Compose (Compose (Compose))
 import qualified Data.Functor.Foldable as Fold
 import Data.Maybe (catMaybes, fromMaybe, isJust)
-import Data.Void 
+import Data.Void ( Void, absurd ) 
 import Types (BaseTree (..), CAT, NodeData (C), Word)
 import Control.Monad.Bayes.Enumerator
-import Data.Function
-import Data.Ord
-import Data.List
-import Data.Fix
+    ( normalForm, compact, Enumerator )
+import Data.Function ( ($), (.) )
+import Data.Ord ( Ord(compare), Down(Down) )
+import Data.List ( filter, map, sum, sortBy )
+import Data.Fix ( Fix(Fix) )
 import Prelude hiding (Word)
 
 
