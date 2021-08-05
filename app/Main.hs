@@ -1,6 +1,7 @@
 module Main where
 
-import Types
+import Interaction (speak)
+import Pragmatics (w1)
 
 main :: IO ()
-main = return ()
+main = speak w1

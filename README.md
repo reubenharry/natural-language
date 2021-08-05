@@ -1,4 +1,10 @@
-# natural-language
+# How to run
+
+You'll need `stack` installed.
+
+Clone the repo, and run `stack build` then `stack exec natural-language-exe`. This should open a repl.
+
+# What this is
 
 This implements a grammar probabilistically as a generalized unfold (a [futumorphism](https://blog.sumtypeofway.com/posts/recursion-schemes-part-4.html)). That's in Syntax.hs.
 
