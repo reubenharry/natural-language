@@ -30,6 +30,8 @@ dependencies:
 - containers
 - MemoTrie
 - data-fix
+- reactive-banana
+- random
 
 library:
   source-dirs: src
