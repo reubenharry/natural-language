@@ -1,3 +1,189 @@
+# Example
+
+Generate informative language using a probabilistic context free grammar and a compositional semantics. Below is a series of sentences produced to convey a particular state, from a small grammar. You can see successive updates the the listener's belief state.
+
+```sh
+
+This is the world that the speaker is trying to convey
+
+[(Jane,[("runner","True")]),(Jill,[("runner","True")])]
+
+Press Return to compute the speaker's next utterance
+
+>
+
+These are all the possible worlds, according to the listener:
+
+[(Jane,[("runner","False")])]
+[(Jane,[("runner","True")])]
+[(John,[("runner","False")])]
+[(John,[("runner","True")])]
+[(Jill,[("runner","False")])]
+[(Jill,[("runner","True")])]
+[(Jane,[("runner","False")]),(Jill,[("runner","False")])]
+[(Jane,[("runner","False")]),(Jill,[("runner","True")])]
+[(Jane,[("runner","True")]),(Jill,[("runner","False")])]
+[(Jane,[("runner","True")]),(Jill,[("runner","True")])]      <------------------------ TRUE WORLD
+[(John,[("runner","False")]),(Jane,[("runner","False")])]
+[(John,[("runner","False")]),(Jane,[("runner","True")])]
+[(John,[("runner","False")]),(Jill,[("runner","False")])]
+[(John,[("runner","False")]),(Jill,[("runner","True")])]
+[(John,[("runner","True")]),(Jane,[("runner","False")])]
+[(John,[("runner","True")]),(Jane,[("runner","True")])]
+[(John,[("runner","True")]),(Jill,[("runner","False")])]
+[(John,[("runner","True")]),(Jill,[("runner","True")])]
+[(John,[("runner","False")]),(Jane,[("runner","False")]),(Jill,[("runner","False")])]
+[(John,[("runner","False")]),(Jane,[("runner","False")]),(Jill,[("runner","True")])]
+[(John,[("runner","False")]),(Jane,[("runner","True")]),(Jill,[("runner","False")])]
+[(John,[("runner","False")]),(Jane,[("runner","True")]),(Jill,[("runner","True")])]
+[(John,[("runner","True")]),(Jane,[("runner","False")]),(Jill,[("runner","False")])]
+[(John,[("runner","True")]),(Jane,[("runner","False")]),(Jill,[("runner","True")])]
+[(John,[("runner","True")]),(Jane,[("runner","True")]),(Jill,[("runner","False")])]
+[(John,[("runner","True")]),(Jane,[("runner","True")]),(Jill,[("runner","True")])]
+
+And this is the optimal utterance by the speaker:
+
+Jane runs
+
+Press Return to compute the speaker's next utterance
+
+>
+
+These are all the possible worlds, according to the listener:
+
+[(Jane,[("runner","True")])]
+[(Jane,[("runner","True")]),(Jill,[("runner","False")])]
+[(John,[("runner","False")]),(Jane,[("runner","True")])]
+[(Jane,[("runner","True")]),(Jill,[("runner","True")])]      <------------------------ TRUE WORLD
+[(John,[("runner","True")]),(Jane,[("runner","True")])]
+[(John,[("runner","False")]),(Jane,[("runner","True")]),(Jill,[("runner","False")])]
+[(John,[("runner","False")]),(Jane,[("runner","True")]),(Jill,[("runner","True")])]
+[(John,[("runner","True")]),(Jane,[("runner","True")]),(Jill,[("runner","False")])]
+[(John,[("runner","True")]),(Jane,[("runner","True")]),(Jill,[("runner","True")])]
+
+And this is the optimal utterance by the speaker:
+
+Jill runs
+
+Press Return to compute the speaker's next utterance
+
+>
+
+These are all the possible worlds, according to the listener:
+
+[(Jane,[("runner","True")]),(Jill,[("runner","True")])]      <------------------------ TRUE WORLD
+[(John,[("runner","False")]),(Jane,[("runner","True")]),(Jill,[("runner","True")])]
+[(John,[("runner","True")]),(Jane,[("runner","True")]),(Jill,[("runner","True")])]
+
+And this is the optimal utterance by the speaker:
+
+everyone runs
+
+Press Return to compute the speaker's next utterance
+
+>
+
+These are all the possible worlds, according to the listener:
+
+[(Jane,[("runner","True")]),(Jill,[("runner","True")])]      <------------------------ TRUE WORLD
+[(John,[("runner","True")]),(Jane,[("runner","True")]),(Jill,[("runner","True")])]
+
+The speaker's best course of action is to say nothing
+
+```
+
+And here's a second example:
+
+```sh
+
+This is the world that the speaker is trying to convey
+
+[(John,[("runner","False")]),(Jane,[("runner","True")])]
+
+Press Return to compute the speaker's next utterance
+
+>
+
+These are all the possible worlds, according to the listener:
+
+[(Jane,[("runner","False")])]
+[(Jane,[("runner","True")])]
+[(John,[("runner","False")])]
+[(John,[("runner","True")])]
+[(Jill,[("runner","False")])]
+[(Jill,[("runner","True")])]
+[(Jane,[("runner","False")]),(Jill,[("runner","False")])]
+[(Jane,[("runner","False")]),(Jill,[("runner","True")])]
+[(Jane,[("runner","True")]),(Jill,[("runner","False")])]
+[(Jane,[("runner","True")]),(Jill,[("runner","True")])]
+[(John,[("runner","False")]),(Jane,[("runner","False")])]
+[(John,[("runner","False")]),(Jane,[("runner","True")])]      <------------------------ TRUE WORLD
+[(John,[("runner","False")]),(Jill,[("runner","False")])]
+[(John,[("runner","False")]),(Jill,[("runner","True")])]
+[(John,[("runner","True")]),(Jane,[("runner","False")])]
+[(John,[("runner","True")]),(Jane,[("runner","True")])]
+[(John,[("runner","True")]),(Jill,[("runner","False")])]
+[(John,[("runner","True")]),(Jill,[("runner","True")])]
+[(John,[("runner","False")]),(Jane,[("runner","False")]),(Jill,[("runner","False")])]
+[(John,[("runner","False")]),(Jane,[("runner","False")]),(Jill,[("runner","True")])]
+[(John,[("runner","False")]),(Jane,[("runner","True")]),(Jill,[("runner","False")])]
+[(John,[("runner","False")]),(Jane,[("runner","True")]),(Jill,[("runner","True")])]
+[(John,[("runner","True")]),(Jane,[("runner","False")]),(Jill,[("runner","False")])]
+[(John,[("runner","True")]),(Jane,[("runner","False")]),(Jill,[("runner","True")])]
+[(John,[("runner","True")]),(Jane,[("runner","True")]),(Jill,[("runner","False")])]
+[(John,[("runner","True")]),(Jane,[("runner","True")]),(Jill,[("runner","True")])]
+
+And this is the optimal utterance by the speaker:
+
+Jane runs
+
+Press Return to compute the speaker's next utterance
+
+>
+
+These are all the possible worlds, according to the listener:
+
+[(Jane,[("runner","True")])]
+[(Jane,[("runner","True")]),(Jill,[("runner","False")])]
+[(John,[("runner","False")]),(Jane,[("runner","True")])]      <------------------------ TRUE WORLD
+[(Jane,[("runner","True")]),(Jill,[("runner","True")])]
+[(John,[("runner","True")]),(Jane,[("runner","True")])]
+[(John,[("runner","False")]),(Jane,[("runner","True")]),(Jill,[("runner","False")])]
+[(John,[("runner","False")]),(Jane,[("runner","True")]),(Jill,[("runner","True")])]
+[(John,[("runner","True")]),(Jane,[("runner","True")]),(Jill,[("runner","False")])]
+[(John,[("runner","True")]),(Jane,[("runner","True")]),(Jill,[("runner","True")])]
+
+And this is the optimal utterance by the speaker:
+
+the woman runs
+
+Press Return to compute the speaker's next utterance
+
+>
+
+These are all the possible worlds, according to the listener:
+
+[(Jane,[("runner","True")])]
+[(John,[("runner","False")]),(Jane,[("runner","True")])]      <------------------------ TRUE WORLD
+[(John,[("runner","True")]),(Jane,[("runner","True")])]
+
+And this is the optimal utterance by the speaker:
+
+the runner runs
+
+Press Return to compute the speaker's next utterance
+
+>
+
+These are all the possible worlds, according to the listener:
+
+[(Jane,[("runner","True")])]
+[(John,[("runner","False")]),(Jane,[("runner","True")])]      <------------------------ TRUE WORLD
+
+The speaker's best course of action is to say nothing
+
+```
+
 # How to run
 
 You'll need `stack` installed.
